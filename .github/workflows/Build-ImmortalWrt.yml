@@ -126,7 +126,7 @@ jobs:
     - name: Release Upload
       uses: softprops/action-gh-release@v2
       with:
-        files: /mnt/openwrt/openwrt_bin.zip
+        files: /mnt/immortalwrt/immortalwrt_bin.zip
         tag_name: ${{ env.TAG_NAME }}
         name: "ImmortalWrt Auto Build ${{ env.TAG_NAME }}"
       env:
