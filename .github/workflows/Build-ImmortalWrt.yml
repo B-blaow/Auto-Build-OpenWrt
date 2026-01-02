@@ -64,8 +64,15 @@ jobs:
     - name: Run first custom script
       working-directory: /mnt/immortalwrt
       run: |
+        set +e
         FILE=$(ls -1 $GITHUB_WORKSPACE/immortalwrt*.sh | sed -n '1p' || true)
-        [ -f "$FILE" ] && chmod +x "$FILE" && "$FILE"
+        if [ -f "$FILE" ]; then
+          echo "Running first script: $FILE"
+          chmod +x "$FILE"
+          "$FILE" || true
+        else
+          echo "No first immortalwrt*.sh found"
+        fi
 
     - name: Put .config
       run: |
@@ -80,8 +87,15 @@ jobs:
     - name: Run second custom script
       working-directory: /mnt/immortalwrt
       run: |
+        set +e
         FILE=$(ls -1 $GITHUB_WORKSPACE/immortalwrt*.sh | sed -n '2p' || true)
-        [ -f "$FILE" ] && chmod +x "$FILE" && "$FILE"
+        if [ -f "$FILE" ]; then
+          echo "Running second script: $FILE"
+          chmod +x "$FILE"
+          "$FILE" || true
+        else
+          echo "No second immortalwrt*.sh found"
+        fi
 
     - name: Build
       working-directory: /mnt/immortalwrt
