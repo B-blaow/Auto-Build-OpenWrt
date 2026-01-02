@@ -130,4 +130,4 @@ jobs:
         tag_name: ${{ env.TAG_NAME }}
         name: "Official OpenWrt Auto Build ${{ env.TAG_NAME }}"
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
