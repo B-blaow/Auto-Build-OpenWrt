@@ -117,7 +117,7 @@ jobs:
         path: /mnt/lede/lede_bin.zip
     - name: Create Tag
       run: |
-        TAG_NAME=openwrt-$(date +"%Y%m%d-%H%M")
+        TAG_NAME=lede-$(date +"%Y%m%d-%H%M")
         echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
         git tag -f "$TAG_NAME"
         git push -f origin "$TAG_NAME"
