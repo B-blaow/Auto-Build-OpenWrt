@@ -2,7 +2,7 @@ name: Build-LEDE
 
 on:
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 0 3 * *'
   workflow_dispatch:
 
 jobs:
@@ -115,10 +115,19 @@ jobs:
       with:
         name: lede_bin
         path: /mnt/lede/lede_bin.zip
+    - name: Create Tag
+      run: |
+        TAG_NAME=openwrt-$(date +"%Y%m%d-%H%M")
+        echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+        git tag -f "$TAG_NAME"
+        git push -f origin "$TAG_NAME"
 
-    - name: Release
+
+    - name: Release Upload
       uses: softprops/action-gh-release@v2
       with:
-        files: /mnt/lede/lede_bin.zip
+        files: /mnt/openwrt/openwrt_bin.zip
+        tag_name: ${{ env.TAG_NAME }}
+        name: "Official OpenWrt Auto Build ${{ env.TAG_NAME }}"
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN
