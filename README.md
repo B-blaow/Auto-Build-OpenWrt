@@ -1,4 +1,4 @@
-Auto-Build自动编译lede、immortalwrt、openwrt 官方
+Auto-Build自动编译lede、immortalwrt、openwrt 
 
 三份完全统一为同一逻辑
 
