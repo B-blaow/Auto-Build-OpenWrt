@@ -80,16 +80,16 @@ jobs:
           ccache -M $CCACHE_MAXSIZE
           make -j$(nproc) || make -j1 V=s
 
-      - name: Package bin
+      - name: Zip BIN
+        working-directory: /mnt/openwrt/openwrt
         run: |
-          cd $WORKDIR
-          zip -r openwrt_bin.zip bin
+          zip -r /mnt/openwrt/openwrt_bin.zip bin
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: openwrt_bin
-          path: $WORKDIR/openwrt_bin.zip
+          path: /mnt/openwrt/openwrt_bin.zip
 
       - name: Create tag
         run: |
