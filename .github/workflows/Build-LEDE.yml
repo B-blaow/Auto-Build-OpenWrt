@@ -98,7 +98,7 @@ jobs:
       - name: Build
         working-directory: /mnt/lede/lede
         run: |
-          make defconfig
+          #make defconfig
           make -j$(nproc) || make -j1 V=s
 
       - name: Zip BIN
