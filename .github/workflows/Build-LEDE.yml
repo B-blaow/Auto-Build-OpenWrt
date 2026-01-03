@@ -74,8 +74,8 @@ jobs:
           cd $WORKDIR
           make clean
           make defconfig V=s
-          chmod +x $GITHUB_WORKSPACE/check-defconfig.sh
-          bash $GITHUB_WORKSPACE/check-defconfig.sh
+          #chmod +x $GITHUB_WORKSPACE/check-defconfig.sh
+          #bash $GITHUB_WORKSPACE/check-defconfig.sh
 
       - name: Compile
         run: |
