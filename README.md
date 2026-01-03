@@ -10,6 +10,8 @@ Auto-Build自动编译lede、immortalwrt、openwrt 官方
 
 自动检测 config_generate 路径
 
+增加检测被defconfig取消的包
+
 
 yml文件由AI生成
 
