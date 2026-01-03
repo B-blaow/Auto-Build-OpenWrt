@@ -1,123 +1,106 @@
 name: Build OpenWrt
 
 on:
-  schedule:
-    - cron: "0 0 1 * *"
   workflow_dispatch:
     inputs:
       ssh:
-        description: "Enable SSH debug (tmate)"
+        description: 'Enable SSH'
         required: false
-        default: "false"
+        default: 'false'
+  schedule:
+    - cron: '0 0 1 * *'
 
 env:
-  WORKDIR: /mnt/openwrt
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_NAME: openwrt
-  SSH_ENABLE: ${{ github.event.inputs.ssh || 'false' }}
+  WORKDIR: /mnt/openwrt
   CCACHE_DIR: /mnt/ccache_openwrt
   CCACHE_MAXSIZE: 10G
+  SSH_ENABLE: ${{ github.event.inputs.ssh || 'false' }}
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Prepare Disk
-        run: |
-          sudo swapoff -a || true
-          sudo rm -f /swapfile || true
-          sudo mkdir -p /mnt
-          sudo chown runner:runner /mnt
-
-      - name: Install Dependencies
+      - name: Prepare system
         run: |
           sudo apt update
-          sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
-          bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk gcc-multilib g++-multilib gettext \
-          genisoimage git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev \
-          libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev \
-          libreadline-dev libssl-dev libtool llvm lrzsz libnsl-dev ninja-build p7zip p7zip-full patch pkgconf \
-          python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
-          swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
-          sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib \
-          gettext git libssl-dev python3 python3-pip python3-venv rsync unzip zlib1g-dev \
-          file wget ccache
+          sudo apt install -y build-essential clang flex bison g++ gawk \
+            gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
+            python3 python3-pip rsync unzip zlib1g-dev file wget
 
-      - name: Enable ccache
+      - name: Prepare workspace
         run: |
-          mkdir -p $CCACHE_DIR ~/.ccache
-          echo "max_size = $CCACHE_MAXSIZE" > ~/.ccache/ccache.conf
-          echo "export CCACHE_DIR=$CCACHE_DIR" >> $GITHUB_ENV
-          ccache -z
+          sudo mkdir -p /mnt
+          sudo chown $USER:$USER /mnt
 
-      - name: Clone Source
+      - name: Clone source
         run: |
-          mkdir -p $WORKDIR
+          git clone --depth=1 $REPO_URL $WORKDIR
+
+      - name: Run first script
+        run: |
           cd $WORKDIR
-          git clone --depth=1 $REPO_URL $REPO_NAME
-
-      - name: Run first custom script
-        working-directory: /mnt/openwrt/openwrt
-        run: |
-          set +e
-          FILE=$(ls -1 $GITHUB_WORKSPACE/openwrt*.sh | sed -n '1p' || true)
-          [ -f "$FILE" ] && chmod +x "$FILE" && "$FILE" || true
+          FILE=$(ls $GITHUB_WORKSPACE/openwrt*.sh | sed -n '1p')
+          chmod +x "$FILE"
+          "$FILE"
 
       - name: Copy config
-        working-directory: /mnt/openwrt/openwrt
         run: |
-          cp $GITHUB_WORKSPACE/openwrt.config .config
+          cp $GITHUB_WORKSPACE/openwrt.config $WORKDIR/.config
 
-      - name: Update & Install Feeds
-        working-directory: /mnt/openwrt/openwrt
+      - name: Feeds update
         run: |
+          cd $WORKDIR
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Run second custom script
-        working-directory: /mnt/openwrt/openwrt
+      - name: Run second script
         run: |
-          set +e
-          FILE=$(ls -1 $GITHUB_WORKSPACE/openwrt*.sh | sed -n '2p' || true)
-          [ -f "$FILE" ] && chmod +x "$FILE" && "$FILE" || true
+          cd $WORKDIR
+          FILE=$(ls $GITHUB_WORKSPACE/openwrt*.sh | sed -n '2p')
+          chmod +x "$FILE"
+          "$FILE"
 
-      - name: SSH Debug (Optional)
-        if: env.SSH_ENABLE == 'true'
-        uses: mxschmitt/action-tmate@v3
-
-      - name: Build
-        working-directory: /mnt/openwrt/openwrt
+      - name: Prepare config
         run: |
+          cd $WORKDIR
           make defconfig
+          chmod +x $GITHUB_WORKSPACE/check-defconfig.sh
+          bash $GITHUB_WORKSPACE/check-defconfig.sh
+
+      - name: Compile
+        run: |
+          cd $WORKDIR
+          export PATH="/usr/lib/ccache:$PATH"
+          export CCACHE_DIR=$CCACHE_DIR
+          ccache -M $CCACHE_MAXSIZE
           make -j$(nproc) || make -j1 V=s
 
-      - name: Zip BIN
-        working-directory: /mnt/openwrt/openwrt
+      - name: Package bin
         run: |
-          zip -r /mnt/openwrt/openwrt_bin.zip bin
+          cd $WORKDIR
+          zip -r openwrt_bin.zip bin
 
-      - name: Upload Artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: openwrt_bin
-          path: /mnt/openwrt/openwrt_bin.zip
+          path: $WORKDIR/openwrt_bin.zip
 
-      - name: Create Tag
+      - name: Create tag
         run: |
-          TAG=openwrt-$(date +"%Y%m%d-%H%M")
-          echo "TAG_NAME=$TAG" >> $GITHUB_ENV
+          TAG=$(date +"openwrt-%Y%m%d-%H%M")
           git tag -f "$TAG"
-          git push -f origin "$TAG"
+          git push -f  "$TAG"
+          echo "TAG_NAME=$TAG" >> $GITHUB_ENV
 
-      - name: Upload Release
+      - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: /mnt/openwrt/openwrt_bin.zip
           tag_name: ${{ env.TAG_NAME }}
-          name: "OpenWrt Auto Build ${{ env.TAG_NAME }}"
+          files: $WORKDIR/openwrt_bin.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
