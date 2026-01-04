@@ -16,7 +16,7 @@ REQUIRED_PKGS=(
   nikki
   luci-app-nikki
   luci-i18n-nikki-zh-cn
-  ddns-scripts-cloudflare
+  nano
   cloudflared
   luci-app-cloudflared
   wireguard-tools
