@@ -18,11 +18,26 @@ SSH_WAIT_TIMEOUT=120
 # 填 CONFIG_PACKAGE_ 后面的名字
 ##################################################
 CHECK_PKGS=(
-  A
-  B
-  C
-  D
-  E
+  luci-app-ttyd
+  mosdns
+  luci-app-mosdns
+  luci-i18n-mosdns-zh-cn
+  luci-app-homeproxy
+  luci-i18n-homeproxy-zh-cn
+  luci-i18n-adguardhome-zh-cn
+  luci-app-adguardhome
+  nikki
+  luci-app-nikki
+  luci-i18n-nikki-zh-cn
+  ddns-scripts-cloudflare
+  cloudflared
+  luci-app-cloudflared
+  wireguard-tools
+  SING_BOX_BUILD_WIREGUARD
+  kmod-wireguard
+  luci-app-mwan3
+  mwan3
+  luci-i18n-mwan3-zh-cn
 )
 
 echo "================================================="
