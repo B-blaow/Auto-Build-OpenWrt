@@ -2,7 +2,7 @@
 set -e
 
 ##################################################
-# 是否自动修复缺失包
+# 自动修复缺失包
 ##################################################
 AUTO_FIX=true
 
@@ -21,7 +21,7 @@ CHECK_PKGS=(
   nikki
   luci-app-nikki
   luci-i18n-nikki-zh-cn
-  ddns-scripts-cloudflare
+  nano
   cloudflared
   luci-app-cloudflared
   wireguard-tools
@@ -35,8 +35,18 @@ CHECK_PKGS=(
 # 前置检查
 ##################################################
 [ -f ".config" ] || { echo "❌ .config not found"; exit 1; }
-[ -x "./scripts/config" ] || { echo "❌ scripts/config not found"; exit 1; }
 
+# 选择正确的 config 工具
+if [ -x "./scripts/config.sh" ]; then
+  CONFIG_TOOL="./scripts/config.sh"
+elif [ -x "./scripts/config" ]; then
+  CONFIG_TOOL="./scripts/config"
+else
+  echo "❌ No usable scripts/config found"
+  exit 1
+fi
+
+echo "ℹ️ Using config tool: ${CONFIG_TOOL}"
 echo "================================================="
 echo " Auto-fix missing packages in .config"
 echo "================================================="
@@ -58,7 +68,7 @@ for pkg in "${CHECK_PKGS[@]}"; do
     echo "⚠️ ${pkg}: is not set"
     if [ "$AUTO_FIX" = true ]; then
       echo "   🔧 enable ${pkg}"
-      ./scripts/config set "${SYMBOL}" y || true
+      ${CONFIG_TOOL} set "${SYMBOL}" y || true
       FIXED=1
     else
       FAILED=1
@@ -68,7 +78,7 @@ for pkg in "${CHECK_PKGS[@]}"; do
     echo "❌ ${pkg}: not found in .config"
     if [ "$AUTO_FIX" = true ]; then
       echo "   🔧 enable ${pkg}"
-      ./scripts/config set "${SYMBOL}" y || true
+      ${CONFIG_TOOL} set "${SYMBOL}" y || true
       FIXED=1
     else
       FAILED=1
