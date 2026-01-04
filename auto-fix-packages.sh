@@ -21,7 +21,7 @@ CHECK_PKGS=(
   nikki
   luci-app-nikki
   luci-i18n-nikki-zh-cn
-  nano
+  ddns-scripts-cloudflare
   cloudflared
   luci-app-cloudflared
   wireguard-tools
