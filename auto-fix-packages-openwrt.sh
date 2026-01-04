@@ -34,17 +34,7 @@ FAILED=0
 ##################################################
 CHECK_PKGS=(
   luci-app-ttyd
-  mosdns
-  luci-app-mosdns
-  luci-i18n-mosdns-zh-cn
-  luci-app-homeproxy
-  luci-i18n-homeproxy-zh-cn
-  luci-i18n-adguardhome-zh-cn
-  luci-app-adguardhome
-  nikki
-  luci-app-nikki
-  luci-i18n-nikki-zh-cn
-  ddns-scripts-cloudflare
+  nano
   cloudflared
   luci-app-cloudflared
   wireguard-tools
