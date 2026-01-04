@@ -36,13 +36,13 @@ CHECK_PKGS=(
 ##################################################
 [ -f ".config" ] || { echo "❌ .config not found"; exit 1; }
 
-# 选择正确的 config 工具
-if [ -x "./scripts/config.sh" ]; then
-  CONFIG_TOOL="./scripts/config.sh"
-elif [ -x "./scripts/config" ]; then
+# 判断正确的 config 工具
+if [ -f "./scripts/config" ]; then
   CONFIG_TOOL="./scripts/config"
+elif [ -f "./scripts/config.sh" ]; then
+  CONFIG_TOOL="./scripts/config.sh"
 else
-  echo "❌ No usable scripts/config found"
+  echo "❌ No usable config tool found!"
   exit 1
 fi
 
