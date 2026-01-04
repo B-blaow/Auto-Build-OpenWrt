@@ -3,8 +3,6 @@ set -e
 
 ##################################################
 # 是否自动修复缺失包
-# true  : 自动写回 .config
-# false : 只检测（失败即退出）
 ##################################################
 AUTO_FIX=true
 
@@ -37,13 +35,12 @@ CHECK_PKGS=(
 # 前置检查
 ##################################################
 if [ ! -f ".config" ]; then
-  echo "❌ .config not found, please run make defconfig first"
+  echo "❌ .config not found, run make defconfig first"
   exit 1
 fi
 
 if [ ! -x scripts/config/conf ]; then
   echo "❌ scripts/config/conf not found"
-  echo "👉 run make defconfig / make menuconfig first"
   exit 1
 fi
 
@@ -55,10 +52,11 @@ FIXED=0
 FAILED=0
 
 ##################################################
-# 检测 + 自动修复
+# 检测 + 修复
 ##################################################
 for pkg in "${CHECK_PKGS[@]}"; do
   CONF="CONFIG_PACKAGE_${pkg}"
+  SYMBOL="PACKAGE_${pkg}"
 
   if grep -q "^${CONF}=y" .config; then
     echo "✅ ${pkg}: =y"
@@ -67,7 +65,7 @@ for pkg in "${CHECK_PKGS[@]}"; do
     echo "⚠️ ${pkg}: is not set"
     if [ "$AUTO_FIX" = true ]; then
       echo "   🔧 enable ${pkg}"
-      scripts/config/conf --enable "${CONF}"
+      scripts/config/conf -e "${SYMBOL}"
       FIXED=1
     else
       FAILED=1
@@ -77,7 +75,7 @@ for pkg in "${CHECK_PKGS[@]}"; do
     echo "❌ ${pkg}: not found in .config"
     if [ "$AUTO_FIX" = true ]; then
       echo "   🔧 enable ${pkg}"
-      scripts/config/conf --enable "${CONF}"
+      scripts/config/conf -e "${SYMBOL}"
       FIXED=1
     else
       FAILED=1
@@ -119,7 +117,6 @@ done
 if [ "$FAILED" = 1 ]; then
   echo
   echo "❌ Package check failed"
-  echo "👉 Some packages are unavailable for this target or feeds"
   exit 1
 fi
 
