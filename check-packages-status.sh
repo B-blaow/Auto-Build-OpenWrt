@@ -5,7 +5,7 @@ set -e
 # 是否开启 SSH（true / false）
 # 默认 false，不会自动触发
 ##################################################
-ENABLE_SSH=true
+ENABLE_SSH=false
 
 ##################################################
 # SSH 最大等待时间（秒）
@@ -29,7 +29,6 @@ CHECK_PKGS=(
   nikki
   luci-app-nikki
   luci-i18n-nikki-zh-cn
-  ddns-scripts-cloudflare
   cloudflared
   luci-app-cloudflared
   wireguard-tools
