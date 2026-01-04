@@ -97,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: immortalwrt_bin
-          path: $WORKDIR/immortalwrt_bin.zip
+          path: ${{ env.WORKDIR }}/immortalwrt_bin.zip
 
       - name: Create tag
         run: |
