@@ -14,8 +14,6 @@ fi
 # 判断正确的 config 工具
 if [ -f "./scripts/config" ]; then
   CONFIG_TOOL="./scripts/config"
-elif [ -f "./scripts/config.sh" ]; then
-  CONFIG_TOOL="./scripts/config.sh"
 else
   echo "❌ No usable config tool found!"
   exit 1
@@ -34,6 +32,7 @@ FAILED=0
 ##################################################
 CHECK_PKGS=(
   luci-app-ttyd
+  nano
   cloudflared
   luci-app-cloudflared
   wireguard-tools
