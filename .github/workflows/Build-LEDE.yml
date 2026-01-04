@@ -76,6 +76,8 @@ jobs:
           make defconfig V=s
           chmod +x $GITHUB_WORKSPACE/check-packages-status.sh
           bash $GITHUB_WORKSPACE/check-packages-status.sh
+          #chmod +x $GITHUB_WORKSPACE/auto-fix-packages.sh
+          #bash $GITHUB_WORKSPACE/auto-fix-packages.sh
 
       - name: Compile
         run: |
