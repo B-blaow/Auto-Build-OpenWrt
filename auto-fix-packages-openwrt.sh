@@ -34,7 +34,6 @@ FAILED=0
 ##################################################
 CHECK_PKGS=(
   luci-app-ttyd
-  nano
   cloudflared
   luci-app-cloudflared
   wireguard-tools
