@@ -94,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: openwrt_bin
-          path: $WORKDIR/openwrt_bin.zip
+          path: ${{ env.WORKDIR }}/openwrt_bin.zip
 
       - name: Create tag
         run: |
