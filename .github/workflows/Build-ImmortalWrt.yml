@@ -52,16 +52,21 @@ jobs:
           FILE=$(ls $GITHUB_WORKSPACE/immortalwrt/immortalwrt*.sh | sed -n '1p')
           chmod +x "$FILE"
           "$FILE"
-
-      - name: Copy config
+      - name: download
         run: |
-          mv $GITHUB_WORKSPACE/immortalwrt/.config $WORKDIR/.config
+          cd $WORKDIR
+          make download
 
+      
       - name: Feeds update
         run: |
           cd $WORKDIR
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+
+      - name: Copy config
+        run: |
+          mv $GITHUB_WORKSPACE/lede/.config $WORKDIR/.config
 
       - name: Run second script
         run: |
