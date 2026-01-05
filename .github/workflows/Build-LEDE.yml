@@ -72,9 +72,8 @@ jobs:
       - name: Prepare config
         run: |
           cd $WORKDIR
-          make oldconfig
           make clean
-          #make defconfig 
+          make defconfig 
           chmod +x $GITHUB_WORKSPACE/check-packages-status.sh
           #bash $GITHUB_WORKSPACE/check-packages-status.sh
           chmod +x $GITHUB_WORKSPACE/auto-fix-packages.sh
