@@ -70,7 +70,7 @@ jobs:
       - name: download
         run: |
           cd $WORKDIR
-          make download -j$(nproc) || make download -j8
+          make download -j8
 
       - name: Prepare config
         run: |
