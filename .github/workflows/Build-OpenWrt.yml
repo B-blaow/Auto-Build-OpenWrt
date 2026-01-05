@@ -71,7 +71,8 @@ jobs:
           make defconfig
           chmod +x $GITHUB_WORKSPACE/check-packages-status.sh
           bash $GITHUB_WORKSPACE/check-packages-status.sh
-          #chmod +x $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
+          chmod +x $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
+          #####删除注释恢复运行#####
           #bash $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
       - name: Compile
         run: |
