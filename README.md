@@ -40,7 +40,7 @@ is not set
 输出清晰状态，避免“以为选了，其实没进固件”
 
 
-3️⃣ 自动修复被 defconfig 取消的包（可选）默认只检测不修复（lede专用脚本auto-fix-packages.sh）（immortalwrt、openwrt专用脚本check-packages-status.sh）默认在yml中注释
+3️⃣ 自动修复被 defconfig 取消的包（可选）（lede专用脚本auto-fix-packages.sh）（immortalwrt、openwrt专用脚本check-packages-status.sh）默认在yml中注释
 
 针对 确认存在于 feeds 中，但被 defconfig 取消的包，
 提供自动修复脚本：
