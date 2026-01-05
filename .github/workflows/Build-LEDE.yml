@@ -52,15 +52,19 @@ jobs:
           chmod +x "$FILE"
           "$FILE"
 
-      - name: Copy config
-        run: |
-          mv $GITHUB_WORKSPACE/lede/.config $WORKDIR/.config
-
+      
       - name: Feeds update
         run: |
           cd $WORKDIR
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+
+
+      - name: Copy config
+        run: |
+          mv $GITHUB_WORKSPACE/lede/.config $WORKDIR/.config   
+
+      
 
       - name: Run second script
         run: |
@@ -68,6 +72,12 @@ jobs:
           FILE=$(ls $GITHUB_WORKSPACE/lede/lede*.sh | sed -n '2p')
           chmod +x "$FILE"
           "$FILE"
+
+
+      - name: download
+        run: |
+          cd $WORKDIR
+          make download
 
       - name: Prepare config
         run: |
