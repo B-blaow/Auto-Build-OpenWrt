@@ -63,3 +63,31 @@ is not set
 CI 成功但功能缺失
 
 99% 是 defconfig 静默丢包
+
+
+
+
+
+
+📂 目录结构说明
+.
+├── openwrt/
+│   ├── .config               配置文件
+│   ├── openwrt1.sh           增加feeds脚本
+│   └── openwrt2.sh           修改默认ip脚本
+│
+├── immortalwrt/
+│   ├── .config              配置文件
+│   ├── immortalwrt1.sh      增加feeds脚本
+│   └── immortalwrt2.sh      修改默认ip脚本
+│
+├── lede/
+│   ├── .config              配置文件
+│   ├── lede1.sh             增加feeds脚本
+│   └── lede2.sh             修改默认ip脚本
+│
+├── check-packages-status.sh       检测config配置+连接ssh修复脚本（默认不连接ssh）
+├── auto-fix-packages-openwrt.sh   immortalwrt & openwrt专用脚本检测+修复 .config 脚本（默认不调用）
+├── auto-fix-packages.sh           lede专用脚本检测+修复 .config 脚本（默认不调用）
+└── README.md
+
