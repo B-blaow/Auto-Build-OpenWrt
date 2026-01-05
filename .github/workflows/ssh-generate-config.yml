@@ -78,7 +78,7 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-        ＃make defconfig
+        
 
     - name: 🔐 SSH (tmate)
       run: |
