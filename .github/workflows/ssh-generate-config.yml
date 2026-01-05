@@ -45,11 +45,12 @@ jobs:
           build-essential clang flex bison g++ gawk gcc-multilib \
           gettext git libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev \
           tmate
-
+          
     - name: Prepare workspace
       run: |
         sudo mkdir -p /mnt
         sudo chown $USER:$USER /mnt
+
 
     - name: Clone source
       run: |
@@ -71,7 +72,7 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-        make defconfig
+        
 
     - name: 🔐 SSH (tmate)
       run: |
@@ -118,6 +119,7 @@ jobs:
         cp "$WORKDIR/.config" "$DEST/.config"
 
         echo "Saved .config to $DEST/.config"
+        ls -l "$DEST/.config"  # 排查文件是否复制成功
 
     - name: Commit & push .config to repo
       if: ${{ inputs.save_to_repo == 'true' }}
