@@ -84,8 +84,7 @@ jobs:
       run: |
         cd $WORKDIR
 
-        tmate new-session -d
-        tmate wait tmate-ready
+        
 
         SOCK="/tmp/tmate.sock"
 
