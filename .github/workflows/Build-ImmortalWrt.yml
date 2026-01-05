@@ -52,10 +52,7 @@ jobs:
           FILE=$(ls $GITHUB_WORKSPACE/immortalwrt/immortalwrt*.sh | sed -n '1p')
           chmod +x "$FILE"
           "$FILE"
-      - name: download
-        run: |
-          cd $WORKDIR
-          make download
+      
 
       
       - name: Feeds update
@@ -74,6 +71,10 @@ jobs:
           FILE=$(ls $GITHUB_WORKSPACE/immortalwrt/immortalwrt*.sh | sed -n '2p')
           chmod +x "$FILE"
           "$FILE"
+      - name: download
+        run: |
+          cd $WORKDIR
+          make download
 
       - name: Prepare config
         run: |
