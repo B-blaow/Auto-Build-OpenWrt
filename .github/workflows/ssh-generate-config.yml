@@ -1,0 +1,120 @@
+name: SSH Generate & Save .config
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Select source'
+        required: true
+        default: openwrt
+        type: choice
+        options:
+          - openwrt
+          - immortalwrt
+          - lede
+
+      save_to_repo:
+        description: 'Save generated .config back to repository'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+
+jobs:
+  ssh-config:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+
+    env:
+      WORKDIR: /mnt/workdir
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          build-essential clang flex bison g++ gawk gcc-multilib \
+          gettext git libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev \
+          tmate
+
+    - name: Clone source
+      run: |
+        mkdir -p $WORKDIR
+        cd $WORKDIR
+
+        case "${{ inputs.target }}" in
+          openwrt)
+            git clone https://github.com/openwrt/openwrt.git .
+            ;;
+          immortalwrt)
+            git clone https://github.com/immortalwrt/immortalwrt.git .
+            ;;
+          lede)
+            git clone https://github.com/coolsnowwolf/lede.git .
+            ;;
+        esac
+
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+        ＃make defconfig
+
+    - name: 🔐 SSH (tmate)
+      run: |
+        cd $WORKDIR
+
+        tmate new-session -d
+        tmate wait tmate-ready
+
+        echo "============================================"
+        echo " SSH is ready"
+        echo
+        echo " SSH : $(tmate display -p '#{tmate_ssh}')"
+        echo " WEB : $(tmate display -p '#{tmate_web}')"
+        echo
+        echo " 👉 在 SSH 中执行："
+        echo "   make menuconfig"
+        echo "   保存后 exit"
+        echo "============================================"
+
+        tmate wait tmate-exit
+
+    - name: Save .config back to repo
+      run: |
+        TARGET="${{ inputs.target }}"
+        DEST="$GITHUB_WORKSPACE/configs/$TARGET"
+
+        mkdir -p "$DEST"
+        cp "$WORKDIR/.config" "$DEST/.config"
+
+        echo "Saved .config to $DEST/.config"
+
+    - name: Commit & push .config
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+        git add configs/${{ inputs.target }}/.config
+
+        if git diff --cached --quiet; then
+          echo "No config changes to commit"
+        else
+          git commit -m "configs(${{
+            inputs.target
+          }}): update .config via SSH"
+          git push
+        fi
+
+    - name: Upload .config artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.target }}-config
+        path: $GITHUB_WORKSPACE/configs/${{ inputs.target }}/.config
