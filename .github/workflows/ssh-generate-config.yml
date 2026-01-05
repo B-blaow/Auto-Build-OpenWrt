@@ -22,7 +22,6 @@ on:
           - 'true'
           - 'false'
 
-
 jobs:
   ssh-config:
     runs-on: ubuntu-22.04
@@ -30,6 +29,8 @@ jobs:
 
     env:
       WORKDIR: /mnt/workdir
+      CONFIG_DIR: $GITHUB_WORKSPACE/configs/${{ inputs.target }}
+      SSH_WAIT_TIMEOUT: 1800  # 30 分钟超时
 
     steps:
     - name: Checkout repo
@@ -40,23 +41,10 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
-          bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk gcc-multilib g++-multilib gettext \
-          genisoimage git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev \
-          libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev \
-          libreadline-dev libssl-dev libtool llvm lrzsz libnsl-dev ninja-build p7zip p7zip-full patch pkgconf \
-          python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
-          swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
         sudo apt install -y \
           build-essential clang flex bison g++ gawk gcc-multilib \
           gettext git libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev \
-          tmate ccache
-
-    - name: Prepare workspace
-      run: |
-        sudo mkdir -p /mnt
-        sudo chown $USER:$USER /mnt
-
+          tmate
 
     - name: Clone source
       run: |
@@ -78,48 +66,45 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-        
+        make defconfig
 
     - name: 🔐 SSH (tmate)
       run: |
         cd $WORKDIR
 
-        
+        tmate -S /tmp/tmate.sock new-session -d
+        tmate -S /tmp/tmate.sock wait tmate-ready
 
-        SOCK="/tmp/tmate.sock"
-        WAIT_SECONDS=1800
+        SSH_CMD=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+        WEB_CMD=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
 
-        tmate -S "$SOCK" new-session -d
-        tmate -S "$SOCK" wait tmate-ready
-
-        SSH_CMD=$(tmate -S "$SOCK" display -p '#{tmate_ssh}')
-        WEB_CMD=$(tmate -S "$SOCK" display -p '#{tmate_web}')
-
-        echo "==============================================="
-        SSH_CMD=$(tmate -S "$SOCK" display -p '#{tmate_ssh}')
+        echo "============================================"
+        echo " SSH session is ready"
         echo
         echo " SSH : $SSH_CMD"
         echo " WEB : $WEB_CMD"
         echo
-        echo "==============================================="
+        echo " Please connect to the SSH session."
+        echo " ============================================"
 
+        # 等待 SSH 连接，超时后关闭
         SECONDS=0
-        while [ $SECONDS -lt $WAIT_SECONDS ]; do
-        CLIENTS=$(tmate -S "$SOCK" display -p '#{tmate_num_clients}')
+        while [ $SECONDS -lt $SSH_WAIT_TIMEOUT ]; do
+          CLIENTS=$(tmate -S /tmp/tmate.sock display -p '#{tmate_num_clients}')
           if [ "$CLIENTS" != "0" ]; then
             echo "🔓 SSH client connected"
-            tmate -S "$SOCK" wait tmate-exit
+            tmate -S /tmp/tmate.sock wait tmate-exit
             echo "🔒 SSH session closed by user"
             exit 0
           fi
           sleep 5
         done
 
-        echo "⏱ SSH timeout reached, closing session"
-        tmate -S "$SOCK" kill-session
+        # 超时后自动结束
+        echo "⏱ SSH session timed out"
+        tmate -S /tmp/tmate.sock kill-session
 
-
-    - name: Save .config back to repo
+    - name: Save .config to workspace
       run: |
         TARGET="${{ inputs.target }}"
         DEST="$GITHUB_WORKSPACE/configs/$TARGET"
@@ -129,7 +114,8 @@ jobs:
 
         echo "Saved .config to $DEST/.config"
 
-    - name: Commit & push .config
+    - name: Commit & push .config to repo
+      if: ${{ inputs.save_to_repo == 'true' }}
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
@@ -139,9 +125,7 @@ jobs:
         if git diff --cached --quiet; then
           echo "No config changes to commit"
         else
-          git commit -m "configs(${{
-            inputs.target
-          }}): update .config via SSH"
+          git commit -m "configs(${{ inputs.target }}): update .config via SSH"
           git push
         fi
 
