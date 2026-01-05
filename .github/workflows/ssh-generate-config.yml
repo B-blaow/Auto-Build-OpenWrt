@@ -101,7 +101,6 @@ jobs:
         echo " SSH : $SSH_CMD"
         echo " WEB : $WEB_CMD"
         echo
-        echo " No connection within ${SSH_WAIT_TIMEOUT}s → auto close"
         echo "==============================================="
 
 
