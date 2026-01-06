@@ -127,17 +127,12 @@ jobs:
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
 
-        git add configs/${{ inputs.target }}/.config
+        git add ${{ inputs.target }}/.config
 
         if git diff --cached --quiet; then
           echo "No config changes to commit"
         else
-          git commit -m "configs(${{ inputs.target }}): update .config via SSH"
+          git commit -m "(${{ inputs.target }}): update .config via SSH"
           git push
         fi
 
-    - name: Upload .config artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ inputs.target }}-config
-        path: $GITHUB_WORKSPACE/configs/${{ inputs.target }}/.config
