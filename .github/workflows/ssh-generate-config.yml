@@ -15,8 +15,8 @@ on:
 
       save_to_repo:
         description: 'Save generated .config back to repository'
-        required: true
-        default: 'false'
+        required: false
+        default: 'true'
         type: choice
         options:
           - 'true'
