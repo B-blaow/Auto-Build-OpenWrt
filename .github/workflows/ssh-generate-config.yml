@@ -113,7 +113,7 @@ jobs:
     - name: Save .config to workspace
       run: |
         TARGET="${{ inputs.target }}"
-        DEST="$GITHUB_WORKSPACE/configs/$TARGET"
+        DEST="$GITHUB_WORKSPACE/$TARGET"
 
         mkdir -p "$DEST"
         cp "$WORKDIR/.config" "$DEST/.config"
