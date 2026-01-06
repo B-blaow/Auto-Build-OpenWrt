@@ -58,7 +58,7 @@ jobs:
 
       - name: Copy config
         run: |
-          mv $GITHUB_WORKSPACE/lede/.config $WORKDIR/.config
+          mv $GITHUB_WORKSPACE/openwrt/.config $WORKDIR/.config
 
       - name: Run second script
         run: |
