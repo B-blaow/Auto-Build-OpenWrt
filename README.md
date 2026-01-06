@@ -2,7 +2,7 @@ AutoBuild OpenWrt / ImmortalWrt / LEDE
 
 
 
-增加ssh-generate-config.yml生成.config文件直推送到正确目录
+增加ssh-generate-config.yml生成.config文件直push推送到正确目录，如果.config没有变化则不推送push
 
 GitHub Actions CI 的 OpenWrt / ImmortalWrt / LEDE 自动化编译仓库，
 重点解决以下问题：
