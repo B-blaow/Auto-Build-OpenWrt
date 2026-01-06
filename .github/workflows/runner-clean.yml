@@ -2,8 +2,8 @@ name: Daily CI Environment Cleanup
 
 on:
   schedule:
-    - cron: "0 6 * * *"   
-  workflow_dispatch:     
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
 permissions:
   actions: write
@@ -15,16 +15,17 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: 显示清理前磁盘使用情况
+      - name: 磁盘使用情况（清理前）
         run: |
-          echo "=== Disk usage BEFORE cleanup ==="
+          echo "=== BEFORE CLEANUP ==="
           df -h
-          du -h --max-depth=1 / | sort -hr | head -n 20 || true
+          du -h --max-depth=1 / \
+            --exclude=/proc \
+            --exclude=/sys \
+            --exclude=/dev \
+            2>/dev/null | sort -hr | head -n 20
 
-      ##################################################
-      # 核心：释放 GitHub Runner 自带的大块垃圾
-      ##################################################
-      - name: 清理系统组件 & 工具缓存
+      - name: 清理系统组件
         run: |
           sudo rm -rf /usr/share/dotnet || true
           sudo rm -rf /opt/ghc || true
@@ -33,9 +34,6 @@ jobs:
 
       - name: 清理 Docker
         run: |
-          sudo docker image prune -af || true
-          sudo docker container prune -f || true
-          sudo docker volume prune -f || true
           sudo docker system prune -af || true
 
       - name: 清理 APT / 日志 / 临时文件
@@ -45,21 +43,23 @@ jobs:
           sudo rm -rf /var/log/*
           sudo rm -rf /tmp/* /var/tmp/*
 
-      ##################################################
-      # /mnt 是 GitHub Runner 最大磁盘
-      ##################################################
-      - name: 清理 /mnt 临时目录
+      # ⭐ 核心修复：不碰 swapfile
+      - name: 清理 /mnt（保留 swapfile）
         run: |
-          sudo rm -rf /mnt/*
+          echo "Cleaning /mnt except swapfile"
+          sudo find /mnt -mindepth 1 -maxdepth 1 ! -name swapfile -exec rm -rf {} +
           sudo mkdir -p /mnt
           sudo chown $USER:$USER /mnt
 
-      - name: 显示清理后磁盘使用情况
+      - name: 磁盘使用情况（清理后）
         run: |
-          echo "=== Disk usage AFTER cleanup ==="
+          echo "=== AFTER CLEANUP ==="
           df -h
-          du -h --max-depth=1 / | sort -hr | head -n 20 || true
+          du -h --max-depth=1 / \
+            --exclude=/proc \
+            --exclude=/sys \
+            --exclude=/dev \
+            2>/dev/null | sort -hr | head -n 20
 
-      - name: Cleanup Finished
-        run: |
-          echo "✅ GitHub Actions Runner cleanup completed successfully"
+      - name: Cleanup Done
+        run: echo "✅ Runner cleanup finished safely"
