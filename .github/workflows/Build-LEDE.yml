@@ -101,6 +101,8 @@ jobs:
       - name: Package bin
         run: |
           cd $WORKDIR
+          rm -rf bin/packages || true
+          rm -rf bin/targets/*/*/packages || true
           zip -r lede_bin.zip bin
 
       - name: Upload artifact
