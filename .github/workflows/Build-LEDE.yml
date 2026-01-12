@@ -27,7 +27,6 @@ jobs:
       - name: Prepare system
         run: |
           sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
-          sudo docker image prune --all
           sudo apt update
           sudo apt install -y bc lm-sensors pciutils wsdd2 ccache
           sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
