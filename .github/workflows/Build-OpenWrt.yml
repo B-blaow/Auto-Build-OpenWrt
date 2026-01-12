@@ -26,6 +26,7 @@ jobs:
 
       - name: Prepare system
         run: |
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc 
           sudo apt update
           sudo apt install -y build-essential clang flex bison g++ gawk \
             gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
