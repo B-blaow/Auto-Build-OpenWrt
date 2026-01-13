@@ -6,7 +6,7 @@ sed -i 's/192.168.1.1/192.168.5.1/g' $(pwd)/package/base-files/files/bin/config_
 #Clear the login password
 sed -i 's/$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.//g' $(pwd)/package/lean/default-settings/files/zzz-default-settings
 
-# ==== 加入nano ====
+# ==== add nano ====
 #sed -i 's/^# CONFIG_PACKAGE_nano is not set/CONFIG_PACKAGE_nano=y/' .config
 #grep -q '^CONFIG_PACKAGE_nano=y' .config || echo 'CONFIG_PACKAGE_nano=y' >> .config
 
