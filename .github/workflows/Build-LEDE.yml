@@ -104,9 +104,11 @@ jobs:
           cd $WORKDIR
           rm -rf bin/packages || true
           rm -rf bin/targets/*/*/packages || true
-          #如果未来目录层级产生变化使用以下命令删除packages
-          ＃find bin -type d -name packages -exec rm -rf {} + || true
-          zip -r lede_bin.zip bin
+          # 如果未来目录层级产生变化使用以下命令删除packages
+          # find bin -type d -name packages -exec rm -rf {} + || true
+          ls -lh lede_bin.zip || echo "zip 不存在"
+          rm -f lede_bin.zip || true
+          find bin/targets -maxdepth 3 -type f ! -path "*/packages/*" -print | zip -j lede_bin.zip -@
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
