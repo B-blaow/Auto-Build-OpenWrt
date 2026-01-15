@@ -24,29 +24,42 @@ jobs:
         run: |
           echo "=== BEFORE CLEANUP ==="
           df -h
-          du -h --max-depth=1 / \
+          sudo du -h / \
             --exclude=/proc \
             --exclude=/sys \
             --exclude=/dev \
-            2>/dev/null | sort -hr | head -n 20
+            2>/dev/null | sort -hr | head -n 30
 
-      - name: 清理系统组件
+      - name: 移除大型系统组件（安全）
         run: |
           sudo rm -rf /usr/share/dotnet || true
           sudo rm -rf /opt/ghc || true
           sudo rm -rf /usr/local/lib/android || true
-          
 
-      - name: 清理 Docker
+      - name: 条件化清理 Docker（检测容器）
         run: |
-          sudo docker system prune -af || true
+          echo "=== Docker Cleanup ==="
+          RUNNING_CONTAINERS=$(sudo docker ps -q || true)
+          if [ -n "$RUNNING_CONTAINERS" ]; then
+            echo "⚠️ 检测到有正在运行的容器，跳过 /var/lib/docker 删除"
+            sudo docker system prune -af || true
+          else
+            echo "✅ 没有运行中的容器，执行深度清理"
+            sudo docker system prune -af || true
+            sudo rm -rf /var/lib/docker || true
+          fi
 
       - name: 清理 APT / 日志 / 临时文件
         run: |
-          sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-          sudo rm -rf /var/log/*
-          sudo rm -rf /tmp/* /var/tmp/*
+          sudo apt-get clean || true
+          sudo rm -rf /var/lib/apt/lists/* || true
+          sudo find /var/log -type f -delete || true
+          sudo rm -rf /tmp/* /var/tmp/* || true
+
+      - name: 清理 runner 工作目录
+        run: |
+          sudo rm -rf /home/runner/work/* || true
+          sudo rm -rf /home/runner/_work/* || true
 
       - name: 清理 /mnt（保留 swapfile）
         run: |
@@ -55,15 +68,21 @@ jobs:
           sudo mkdir -p /mnt
           sudo chown $USER:$USER /mnt
 
+      - name: 清理用户缓存（ccache / npm / pip）
+        run: |
+          rm -rf ~/.ccache || true
+          rm -rf ~/.cache/pip || true
+          rm -rf ~/.npm || true
+
       - name: 磁盘使用情况（清理后）
         run: |
           echo "=== AFTER CLEANUP ==="
           df -h
-          du -h --max-depth=1 / \
+          sudo du -h / \
             --exclude=/proc \
             --exclude=/sys \
             --exclude=/dev \
-            2>/dev/null | sort -hr | head -n 20
+            2>/dev/null | sort -hr | head -n 30
 
       - name: Cleanup Done
-        run: echo "✅ Runner cleanup finished safely"
+        run: echo "✅ Runner deep cleanup finished safely"
