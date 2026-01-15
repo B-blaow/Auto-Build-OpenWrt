@@ -1,4 +1,4 @@
-name: CI Environment Cleanup (Aggressive)
+name: CI Environment Cleanup (Aggressive-Safe)
 
 on:
   workflow_run:
@@ -32,7 +32,7 @@ jobs:
             2>/dev/null | sort -hr | head -n 20
 
       # -----------------------------
-      # 系统预装组件
+      # 系统预装组件（安全）
       # -----------------------------
       - name: Remove Preinstalled SDKs & Toolchains
         if: ${{ always() }}
@@ -40,10 +40,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet || true
           sudo rm -rf /opt/ghc || true
           sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /opt/hostedtoolcache || true
+          # ❗ 保留 /opt/hostedtoolcache（OpenWrt host tools 必须用）
+          # sudo rm -rf /opt/hostedtoolcache || true
 
       # -----------------------------
-      # 语言环境缓存
+      # 语言环境缓存（安全）
       # -----------------------------
       - name: Clean Node / npm / yarn
         if: ${{ always() }}
@@ -56,7 +57,8 @@ jobs:
         if: ${{ always() }}
         run: |
           sudo rm -rf ~/.cache/pip
-          sudo rm -rf /usr/local/lib/python*/dist-packages
+          # ❗ 保留 python dist-packages（OpenWrt host tools 必须用）
+          # sudo rm -rf /usr/local/lib/python*/dist-packages
 
       - name: Clean Rust / Cargo
         if: ${{ always() }}
@@ -70,25 +72,24 @@ jobs:
           sudo rm -rf ~/go/pkg/mod
           sudo rm -rf ~/go/bin
 
-      - name: Clean Homebrew
-        if: ${{ always() }}
-        run: |
-          sudo rm -rf ~/Library/Caches/Homebrew
-          sudo rm -rf /home/linuxbrew/.linuxbrew/Cellar
-          sudo rm -rf /home/linuxbrew/.linuxbrew/Homebrew
+      # -----------------------------
+      # Homebrew（不能删）
+      # -----------------------------
+      # ❗ Homebrew 内含 cmake/ninja/python，OpenWrt 必须用
+      # - name: Clean Homebrew
+      #   run: |
+      #     sudo rm -rf /home/linuxbrew/.linuxbrew
 
       # -----------------------------
       # Docker
       # -----------------------------
       - name: Docker prune
         if: ${{ always() }}
-        run: |
-          sudo docker system prune -af || true
+        run: sudo docker system prune -af || true
 
       - name: Deep clean Docker overlay2
         if: ${{ always() }}
-        run: |
-          sudo rm -rf /var/lib/docker/overlay2/*
+        run: sudo rm -rf /var/lib/docker/overlay2/*
 
       # -----------------------------
       # APT / 日志 / 临时文件
@@ -110,12 +111,11 @@ jobs:
           sudo journalctl --vacuum-time=1s
 
       # -----------------------------
-      # mnt（保留 swapfile）
+      # /mnt（保留 swapfile）
       # -----------------------------
       - name: Clean /mnt except swapfile
         if: ${{ always() }}
         run: |
-          echo "Cleaning /mnt except swapfile"
           sudo find /mnt -mindepth 1 -maxdepth 1 ! -name swapfile -exec rm -rf {} +
           sudo mkdir -p /mnt
           sudo chown $USER:$USER /mnt
@@ -136,4 +136,4 @@ jobs:
 
       - name: Cleanup Done
         if: ${{ always() }}
-        run: echo "🔥 Aggressive runner cleanup completed"
+        run: echo "🔥 Aggressive-Safe runner cleanup completed"
