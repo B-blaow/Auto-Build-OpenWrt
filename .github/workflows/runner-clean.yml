@@ -1,4 +1,4 @@
-name: CI Environment Cleanup (Aggressive-Safe)
+name: CI Environment Cleanup
 
 on:
   workflow_run:
@@ -17,11 +17,10 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
 
     steps:
-      - name: BEFORE CLEANUP — Disk Usage
-        if: ${{ always() }}
+      - name: 磁盘使用情况（清理前）
         run: |
           echo "=== BEFORE CLEANUP ==="
           df -h
@@ -31,100 +30,32 @@ jobs:
             --exclude=/dev \
             2>/dev/null | sort -hr | head -n 20
 
-      # -----------------------------
-      # 系统预装组件（安全）
-      # -----------------------------
-      - name: Remove Preinstalled SDKs & Toolchains
-        if: ${{ always() }}
+      - name: 清理系统组件
         run: |
           sudo rm -rf /usr/share/dotnet || true
           sudo rm -rf /opt/ghc || true
           sudo rm -rf /usr/local/lib/android || true
-          # ❗ 保留 /opt/hostedtoolcache（OpenWrt host tools 必须用）
-          # sudo rm -rf /opt/hostedtoolcache || true
+          sudo rm -rf /opt/hostedtoolcache || true
 
-      # -----------------------------
-      # 语言环境缓存（安全）
-      # -----------------------------
-      - name: Clean Node / npm / yarn
-        if: ${{ always() }}
+      - name: 清理 Docker
         run: |
-          sudo rm -rf ~/.npm
-          sudo rm -rf ~/.cache/yarn
-          sudo rm -rf ~/.nvm
+          sudo docker system prune -af || true
 
-      - name: Clean Python / pip
-        if: ${{ always() }}
-        run: |
-          sudo rm -rf ~/.cache/pip
-          # ❗ 保留 python dist-packages（OpenWrt host tools 必须用）
-          # sudo rm -rf /usr/local/lib/python*/dist-packages
-
-      - name: Clean Rust / Cargo
-        if: ${{ always() }}
-        run: |
-          sudo rm -rf ~/.cargo
-          sudo rm -rf ~/.rustup
-
-      - name: Clean Go Modules
-        if: ${{ always() }}
-        run: |
-          sudo rm -rf ~/go/pkg/mod
-          sudo rm -rf ~/go/bin
-
-      # -----------------------------
-      # Homebrew（不能删）
-      # -----------------------------
-      # ❗ Homebrew 内含 cmake/ninja/python，OpenWrt 必须用
-      # - name: Clean Homebrew
-      #   run: |
-      #     sudo rm -rf /home/linuxbrew/.linuxbrew
-
-      # -----------------------------
-      # Docker
-      # -----------------------------
-      - name: Docker prune
-        if: ${{ always() }}
-        run: sudo docker system prune -af || true
-
-      - name: Deep clean Docker overlay2
-        if: ${{ always() }}
-        run: sudo rm -rf /var/lib/docker/overlay2/*
-
-      # -----------------------------
-      # APT / 日志 / 临时文件
-      # -----------------------------
-      - name: Clean APT & Logs
-        if: ${{ always() }}
+      - name: 清理 APT / 日志 / 临时文件
         run: |
           sudo apt-get clean
-          sudo apt-get autoremove -y
-          sudo apt-get autoclean -y
           sudo rm -rf /var/lib/apt/lists/*
           sudo rm -rf /var/log/*
           sudo rm -rf /tmp/* /var/tmp/*
 
-      - name: Clean systemd journal
-        if: ${{ always() }}
+      - name: 清理 /mnt（保留 swapfile）
         run: |
-          sudo journalctl --rotate
-          sudo journalctl --vacuum-time=1s
-
-      # -----------------------------
-      # /mnt（保留 swapfile）
-      # -----------------------------
-      - name: Clean /mnt except swapfile
-        if: ${{ always() }}
-        run: |
+          echo "Cleaning /mnt except swapfile"
           sudo find /mnt -mindepth 1 -maxdepth 1 ! -name swapfile -exec rm -rf {} +
           sudo mkdir -p /mnt
           sudo chown $USER:$USER /mnt
 
-      # -----------------------------
-      # 清理后磁盘使用情况
-      # -----------------------------
-      - name: AFTER CLEANUP — Disk Usage
-        if: ${{ always() }}
+      - name: 磁盘使用情况（清理后）
         run: |
           echo "=== AFTER CLEANUP ==="
           df -h
@@ -135,5 +66,4 @@ jobs:
             2>/dev/null | sort -hr | head -n 20
 
       - name: Cleanup Done
-        if: ${{ always() }}
-        run: echo "🔥 Aggressive-Safe runner cleanup completed"
+        run: echo "✅ Runner cleanup finished safely"
