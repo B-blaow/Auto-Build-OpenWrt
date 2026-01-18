@@ -1,14 +1,7 @@
 name: Fix and Cleanup Runner for OpenWrt
 
 on:
-  workflow_run:
-    workflows:
-      - SSH Generate & Save .config
-      - Build OpenWrt
-      - Build LEDE
-      - Build ImmortalWrt
-    types:
-      - completed
+  workflow_dispatch:
 
 permissions:
   actions: write
