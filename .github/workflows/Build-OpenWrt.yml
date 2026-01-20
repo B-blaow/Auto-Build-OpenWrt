@@ -72,11 +72,16 @@ jobs:
           cd $WORKDIR
           make clean
           make defconfig
-          chmod +x $GITHUB_WORKSPACE/check-packages-status.sh
-          bash $GITHUB_WORKSPACE/check-packages-status.sh
-          chmod +x $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
+          #chmod +x $GITHUB_WORKSPACE/check-packages-status.sh
+          #bash $GITHUB_WORKSPACE/check-packages-status.sh
+          #chmod +x $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
+          #
           ##### Remove comment‑restore function #####
           #bash $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
+          #
+          chmod +x $GITHUB_WORKSPACE/check-packages.sh
+          bash $GITHUB_WORKSPACE/check-packages.sh
+          
       - name: Compile
         run: |
           cd $WORKDIR
