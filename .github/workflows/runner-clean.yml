@@ -1,6 +1,8 @@
 name: CI Environment Cleanup
 
 on:
+  workflow_dispatch:
+  
   workflow_run:
     workflows:
       - SSH Generate & Save .config
