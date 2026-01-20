@@ -2,11 +2,6 @@ name: Build LEDE
 
 on:
   workflow_dispatch:
-    inputs:
-      ssh:
-        description: 'Enable SSH'
-        required: false
-        default: 'false'
   schedule:
     - cron: '0 0 3 * *'
 
@@ -16,7 +11,6 @@ env:
   WORKDIR: /mnt/lede
   CCACHE_DIR: /mnt/ccache_lede
   CCACHE_MAXSIZE: 10G
-  SSH_ENABLE: ${{ github.event.inputs.ssh || 'false' }}
 
 jobs:
   build:
@@ -28,11 +22,6 @@ jobs:
         run: |
           sudo -E timedatectl set-timezone "Asia/Shanghai"
           date
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /etc/php || true
-          sudo rm -rf /etc/mysql || true
           sudo apt update
           sudo apt install -y bc lm-sensors pciutils wsdd2 
           sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
@@ -43,29 +32,6 @@ jobs:
           python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
           swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
 
-
-      - name: 条件化清理 Docker（检测容器）
-        run: |
-          echo "=== Docker Cleanup ==="
-          RUNNING_CONTAINERS=$(sudo docker ps -q || true)
-          if [ -n "$RUNNING_CONTAINERS" ]; then
-            echo "⚠️ 检测到有正在运行的容器，跳过 /var/lib/docker 删除"
-            sudo docker system prune -af || true
-          else
-            echo "✅ 没有运行中的容器，执行深度清理"
-            sudo docker system prune -af || true
-            sudo rm -rf /var/lib/docker || true
-          fi
-      - name: 磁盘使用情况（清理后）
-        run: |
-          echo "=== AFTER CLEANUP ==="
-          df -h
-          sudo du -h / \
-            --exclude=/proc \
-            --exclude=/sys \
-            --exclude=/dev \
-            2>/dev/null | sort -hr | head -n 50
-            
       - name: Prepare workspace
         run: |
           sudo mkdir -p /mnt
@@ -82,19 +48,15 @@ jobs:
           chmod +x "$FILE"
           "$FILE"
 
-      
       - name: Feeds update
         run: |
           cd $WORKDIR
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-
       - name: Copy config
         run: |
           mv $GITHUB_WORKSPACE/lede/.config $WORKDIR/.config   
-
-      
 
       - name: Run second script
         run: |
@@ -103,11 +65,10 @@ jobs:
           chmod +x "$FILE"
           "$FILE"
 
-
       - name: download
         run: |
           cd $WORKDIR
-          make download -j8
+          make download -j16
 
       - name: Prepare config
         run: |
@@ -117,7 +78,7 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/check-packages-status.sh
           bash $GITHUB_WORKSPACE/check-packages-status.sh
           chmod +x $GITHUB_WORKSPACE/auto-fix-packages.sh
-          #####删除注释恢复运行#####
+          ##### Remove comment‑restore function #####
           #bash $GITHUB_WORKSPACE/auto-fix-packages.sh
 
       - name: Compile
@@ -128,24 +89,14 @@ jobs:
           ccache -M $CCACHE_MAXSIZE
           make -j$(nproc) || make -j1 V=s
 
-      - name: Disk Usage
-        run: |
-          echo "=== CHECKING DISK USAGE AFTER CLEANUP ==="
-          df -h
-          sudo du -h / \
-            --exclude=/proc \
-            --exclude=/sys \
-            --exclude=/dev \
-            2>/dev/null | sort -hr | head -n 30
-
       - name: Package bin
         run: |
           cd $WORKDIR
           rm -rf bin/packages || true
           rm -rf bin/targets/*/*/packages || true
-          # 如果未来目录层级产生变化使用以下命令删除packages
+          # If directory structure changes in the future, use this to delete packages
           # find bin -type d -name packages -exec rm -rf {} + || true
-          ls -lh lede_bin.zip || echo "zip 不存在"
+          #ls -lh lede_bin.zip || echo "zip file does not exist"
           rm -f lede_bin.zip || true
           find bin/targets -maxdepth 3 -type f ! -path "*/packages/*" -print | zip -j lede_bin.zip -@
 
@@ -167,6 +118,5 @@ jobs:
         with:
           tag_name: ${{ env.TAG_NAME }}
           files: ${{ env.WORKDIR }}/lede_bin.zip
-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
