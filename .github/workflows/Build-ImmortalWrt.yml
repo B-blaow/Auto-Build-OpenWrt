@@ -94,22 +94,22 @@ jobs:
           ccache -M $CCACHE_MAXSIZE
           make -j$(nproc) || make -j1 V=s
 
-      - name: Package bin
+      - name: Package firmware
         run: |
           cd $WORKDIR
           rm -rf bin/packages || true
           rm -rf bin/targets/*/*/packages || true
           # If directory structure changes in the future, use this to delete packages
           # find bin -type d -name packages -exec rm -rf {} + || true
-          #ls -lh immortalwrt_bin.zip || echo "zip file does not exist"
-          rm -f immortalwrt_bin.zip || true
-          find bin/targets -maxdepth 3 -type f ! -path "*/packages/*" -print | zip -j immortalwrt_bin.zip -@
+          #ls -lh immortalwrt_firmware.zip || echo "zip file does not exist"
+          rm -f immortalwrt_firmware.zip || true
+          find bin/targets -maxdepth 3 -type f ! -path "*/packages/*" -print | zip -j immortalwrt_firmware.zip -@
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: immortalwrt_bin
-          path: ${{ env.WORKDIR }}/immortalwrt_bin.zip
+          name: immortalwrt_firmware
+          path: ${{ env.WORKDIR }}/immortalwrt_firmware.zip
 
       - name: Create tag
         run: |
@@ -122,7 +122,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          files: ${{ env.WORKDIR }}/immortalwrt_bin.zip
+          files: ${{ env.WORKDIR }}/immortalwrt_firmware.zip
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
