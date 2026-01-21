@@ -90,27 +90,27 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           export CCACHE_DIR=$CCACHE_DIR
           ccache -M $CCACHE_MAXSIZE
-          make -j$(nproc) || make -j1 V=s
+          make -j$(nproc) || make -j1
 
      
      
         
-      - name: Package bin
+      - name: Package firmware
         run: |
           cd $WORKDIR
           rm -rf bin/packages || true
           rm -rf bin/targets/*/*/packages || true
           # If directory structure changes in the future, use this to delete packages
           #find bin -type d -name packages -exec rm -rf {} + || true
-          #ls -lh openwrt_bin.zip || echo "zip file does not exist"
-          rm -f openwrt_bin.zip || true
-          find bin/targets -maxdepth 3 -type f ! -path "*/packages/*" -print | zip -j openwrt_bin.zip -@
+          #ls -lh openwrt_firmware.zip || echo "zip file does not exist"
+          rm -f openwrt_firmware.zip || true
+          find bin/targets -maxdepth 3 -type f ! -path "*/packages/*" -print | zip -j openwrt_firmware.zip -@
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: openwrt_bin
-          path: ${{ env.WORKDIR }}/openwrt_bin.zip
+          path: ${{ env.WORKDIR }}/openwrt_firmware.zip
 
       - name: Create tag
         run: |
@@ -123,7 +123,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          files: ${{ env.WORKDIR }}/openwrt_bin.zip
+          files: ${{ env.WORKDIR }}/openwrt_firmware.zip
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
