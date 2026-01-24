@@ -1,0 +1,219 @@
+name: Build immortalwrt_798x
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 2 * *'
+permissions: 
+  contents: write
+
+env:
+  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
+  REPO_NAME: immortalwrt_798x
+  REPO_BRANCH: openwrt-21.02
+  WORKDIR: /mnt/immortalwrt_798x
+  CCACHE_DIR: /mnt/ccache_immortalwrt_798x
+  CCACHE_MAXSIZE: 10G
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare system
+        run: |
+          sudo -E timedatectl set-timezone "Asia/Shanghai"
+          date
+          sudo apt update -y
+          sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          bzip2 ccache clang clangd cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+          g++-multilib git gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev libglib2.0-dev \
+          libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5 libncursesw5-dev libreadline-dev \
+          libssl-dev libtool lld lldb lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf \
+          python3 python3-pip python3-ply python3-docutils qemu-utils re2c rsync scons squashfs-tools subversion swig \
+          texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+
+      - name: Disk usage (before cleanup)
+        run: |
+          echo "=== BEFORE CLEANUP ==="
+          df -h
+          sudo du -h / \
+            --exclude=/proc \
+            --exclude=/sys \
+            --exclude=/dev \
+            2>/dev/null | sort -hr | head -n 30 || true
+
+      - name: Remove large system components (safe)
+        run: |
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /etc/mysql || true
+          sudo rm -rf /etc/php || true
+
+          # System logs
+          sudo find /var/log -type f -delete
+
+          # Fonts
+          sudo rm -rf /usr/share/fonts/*
+
+          # Icons
+          sudo rm -rf /usr/share/icons/*
+
+          # Documentation
+          sudo rm -rf /usr/share/man/* || true
+          sudo rm -rf /usr/share/doc/* || true
+          sudo rm -rf /usr/share/info/* || true
+
+          # Locale files
+          sudo rm -rf /usr/share/locale/*
+          sudo rm -rf /usr/share/i18n/*
+          sudo rm -rf /usr/lib/locale/*
+
+      - name: Conditional Docker cleanup (smart detection)
+        run: |
+          echo "=== Docker Cleanup ==="
+
+          # Check if docker CLI exists
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "❌ Docker CLI not found, skipping cleanup"
+            exit 0
+          fi
+
+          # Check if Docker daemon is running
+          if ! docker info >/dev/null 2>&1; then
+            echo "❌ Docker daemon not running, skipping cleanup"
+            exit 0
+          fi
+
+          echo "✔ Docker daemon detected, starting cleanup..."
+
+          RUNNING_CONTAINERS=$(docker ps -q || true)
+
+          if [ -n "$RUNNING_CONTAINERS" ]; then
+            echo "⚠️ Running containers detected, performing prune only"
+            sudo docker system prune -af || true
+          else
+            echo "✅ No running containers, performing deep cleanup"
+            sudo docker system prune -af || true
+            echo "🧹 Removing /var/lib/docker to free maximum space"
+            sudo rm -rf /var/lib/docker || true
+          fi
+
+          echo "=== Docker Cleanup Done ==="
+
+      - name: Clean APT / logs / temp files
+        run: |
+          sudo apt-get clean || true
+          sudo find /var/log -type f -delete || true
+          sudo rm -rf /tmp/* /var/tmp/* || true
+
+      - name: Clean /mnt (keep swapfile)
+        run: |
+          echo "Cleaning /mnt except swapfile"
+          sudo find /mnt -mindepth 1 -maxdepth 1 ! -name swapfile -exec rm -rf {} +
+          sudo mkdir -p /mnt
+          sudo chown $USER:$USER /mnt
+
+      - name: Clean user caches (ccache / npm / pip)
+        run: |
+          rm -rf ~/.ccache || true
+          rm -rf ~/.cache/pip || true
+          rm -rf ~/.npm || true
+
+      - name: Prepare workspace
+        run: |
+          sudo mkdir -p /mnt
+          sudo chown $USER:$USER /mnt
+
+      - name: Clone source
+        run: |
+          git clone --depth=1 $REPO_URL $WORKDIR
+
+      - name: Run first script
+        run: |
+          cd $WORKDIR
+          FILE=$(ls $GITHUB_WORKSPACE/immortalwrt/immortalwrt*.sh | sed -n '1p')
+          chmod +x "$FILE"
+          "$FILE"
+
+      - name: Feeds update
+        run: |
+          cd $WORKDIR
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Copy config
+        run: |
+          mv $GITHUB_WORKSPACE/immortalwrt_798x/.config $WORKDIR/.config
+
+      - name: Run second script
+        run: |
+          cd $WORKDIR
+          FILE=$(ls $GITHUB_WORKSPACE/immortalwrt/immortalwrt*.sh | sed -n '2p')
+          chmod +x "$FILE"
+          "$FILE"
+
+      - name: Download sources
+        run: |
+          cd $WORKDIR
+          make download -j8
+
+      - name: Prepare config
+        run: |
+          cd $WORKDIR
+          make clean
+          make defconfig
+          chmod +x $GITHUB_WORKSPACE/check-packages.sh
+          bash $GITHUB_WORKSPACE/check-packages.sh
+          chmod +x $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
+          # bash $GITHUB_WORKSPACE/auto-fix-packages-openwrt.sh
+
+      - name: Disk usage (after cleanup)
+        run: |
+          echo "=== AFTER CLEANUP ==="
+          df -h
+          sudo du -h / \
+            --exclude=/proc \
+            --exclude=/sys \
+            --exclude=/dev \
+            2>/dev/null | sort -hr | head -n 30 || true
+
+      - name: Compile
+        run: |
+          cd $WORKDIR
+          export PATH="/usr/lib/ccache:$PATH"
+          export CCACHE_DIR=$CCACHE_DIR
+          ccache -M $CCACHE_MAXSIZE
+          make -j$(nproc) || make -j1 V=s
+
+      - name: Package bin
+        run: |
+          cd $WORKDIR
+          rm -rf bin/packages || true
+          rm -rf bin/targets/*/*/packages || true
+          rm -f immortalwrt_798x_firmware.zip || true
+          find bin/targets -maxdepth 3 -type f ! -path "*/packages/*" -print | zip -j immortalwrt_798x_firmware.zip -@
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt_798x_firmware
+          path: ${{ env.WORKDIR }}/immortalwrt_798x_firmware.zip
+
+      - name: Create tag
+        run: |
+          TAG=$(date +"immortalwrt-798x_%Y%m%d-%H%M")
+          git tag -f "$TAG"
+          git push -f origin "$TAG"
+          echo "TAG_NAME=$TAG" >> $GITHUB_ENV
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: ${{ env.WORKDIR }}/immortalwrt_798x_firmware.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
